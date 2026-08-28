@@ -29,10 +29,22 @@ public class MascotaService {
     }
 
     public Optional<Mascota> actualizarMascota(Long id, Mascota datos) {
-        return mascotaRepository.update(id, datos);
+        return mascotaRepository.findById(id)
+                .map(mascota -> {
+                    mascota.setNombre(datos.getNombre());
+                    mascota.setEspecie(datos.getEspecie());
+                    mascota.setRaza(datos.getRaza());
+                    mascota.setEdad(datos.getEdad());
+                    mascota.setNombreDueno(datos.getNombreDueno());
+                    return mascotaRepository.save(mascota);
+                });
     }
 
     public boolean eliminarMascota(Long id) {
-        return mascotaRepository.deleteById(id);
+        if (!mascotaRepository.existsById(id)) {
+            return false;
+        }
+        mascotaRepository.deleteById(id);
+        return true;
     }
 }
