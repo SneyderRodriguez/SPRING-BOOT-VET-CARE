@@ -1,6 +1,7 @@
 package com.generation.vetcare.controller;
 
-import com.generation.vetcare.model.Mascota;
+import com.generation.vetcare.dto.MascotaRequestDTO;
+import com.generation.vetcare.dto.MascotaResponseDTO;
 import com.generation.vetcare.service.MascotaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,36 +27,35 @@ public class MascotaController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Mascota>> listar() {
-        return ResponseEntity.ok(mascotaService.listarMascotas());
+    public List<MascotaResponseDTO> listar() {
+        return mascotaService.listarMascotas();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Mascota> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<MascotaResponseDTO> buscarPorId(@PathVariable Long id) {
         return mascotaService.buscarPorId(id)
-                .map(mascota -> ResponseEntity.ok(mascota))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Mascota> crear(@RequestBody Mascota mascota) {
-        Mascota creada = mascotaService.crearMascota(mascota);
-        return ResponseEntity.status(HttpStatus.CREATED).body(creada);
+    public ResponseEntity<MascotaResponseDTO> crear(@RequestBody MascotaRequestDTO dto) {
+        return mascotaService.crearMascota(dto)
+                .map(creada -> ResponseEntity.status(HttpStatus.CREATED).body(creada))
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Mascota> actualizar(@PathVariable Long id,
-                                              @RequestBody Mascota datos) {
-        return mascotaService.actualizarMascota(id, datos)
-                .map(mascota -> ResponseEntity.ok(mascota))
+    public ResponseEntity<MascotaResponseDTO> actualizar(@PathVariable Long id, @RequestBody MascotaRequestDTO dto) {
+        return mascotaService.actualizarMascota(id, dto)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
-        if (mascotaService.eliminarMascota(id)) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.notFound().build();
+        return mascotaService.eliminarMascota(id)
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
     }
 }
