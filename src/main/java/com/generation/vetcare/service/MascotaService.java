@@ -1,8 +1,14 @@
 package com.generation.vetcare.service;
 
+import com.generation.vetcare.dto.DuenoResumenDTO;
+import com.generation.vetcare.dto.MascotaRequestDTO;
+import com.generation.vetcare.dto.MascotaResponseDTO;
+import com.generation.vetcare.model.Dueno;
 import com.generation.vetcare.model.Mascota;
+import com.generation.vetcare.repository.DuenoRepository;
 import com.generation.vetcare.repository.MascotaRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,33 +17,57 @@ import java.util.Optional;
 public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
+    private final DuenoRepository duenoRepository;
 
-    public MascotaService(MascotaRepository mascotaRepository) {
+    public MascotaService(MascotaRepository mascotaRepository, DuenoRepository duenoRepository) {
         this.mascotaRepository = mascotaRepository;
+        this.duenoRepository = duenoRepository;
     }
 
-    public List<Mascota> listarMascotas() {
-        return mascotaRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<MascotaResponseDTO> listarMascotas() {
+        return mascotaRepository.findAll()
+                .stream()
+                .map(this::mapearAMascotaResponseDTO)
+                .toList();
     }
 
-    public Optional<Mascota> buscarPorId(Long id) {
-        return mascotaRepository.findById(id);
-    }
-
-    public Mascota crearMascota(Mascota mascota) {
-        return mascotaRepository.save(mascota);
-    }
-
-    public Optional<Mascota> actualizarMascota(Long id, Mascota datos) {
+    @Transactional(readOnly = true)
+    public Optional<MascotaResponseDTO> buscarPorId(Long id) {
         return mascotaRepository.findById(id)
-                .map(mascota -> {
-                    mascota.setNombre(datos.getNombre());
-                    mascota.setEspecie(datos.getEspecie());
-                    mascota.setRaza(datos.getRaza());
-                    mascota.setEdad(datos.getEdad());
-                    mascota.setNombreDueno(datos.getNombreDueno());
-                    return mascotaRepository.save(mascota);
+                .map(this::mapearAMascotaResponseDTO);
+    }
+
+    @Transactional
+    public Optional<MascotaResponseDTO> crearMascota(MascotaRequestDTO datos) {
+        return duenoRepository.findById(datos.duenoId())
+                .map(dueno -> {
+                    Mascota mascota = new Mascota();
+                    mascota.setNombre(datos.nombre());
+                    mascota.setEspecie(datos.especie());
+                    mascota.setRaza(datos.raza());
+                    mascota.setEdad(datos.edad());
+                    mascota.setDueno(dueno);
+
+                    Mascota creada = mascotaRepository.save(mascota);
+                    return mapearAMascotaResponseDTO(creada);
                 });
+    }
+
+    @Transactional
+    public Optional<MascotaResponseDTO> actualizarMascota(Long id, MascotaRequestDTO datos) {
+        return mascotaRepository.findById(id)
+                .flatMap(mascota -> duenoRepository.findById(datos.duenoId())
+                        .map(dueno -> {
+                            mascota.setNombre(datos.nombre());
+                            mascota.setEspecie(datos.especie());
+                            mascota.setRaza(datos.raza());
+                            mascota.setEdad(datos.edad());
+                            mascota.setDueno(dueno);
+
+                            Mascota actualizada = mascotaRepository.save(mascota);
+                            return mapearAMascotaResponseDTO(actualizada);
+                        }));
     }
 
     public boolean eliminarMascota(Long id) {
@@ -46,5 +76,19 @@ public class MascotaService {
         }
         mascotaRepository.deleteById(id);
         return true;
+    }
+
+    private MascotaResponseDTO mapearAMascotaResponseDTO(Mascota mascota) {
+        Dueno dueno = mascota.getDueno();
+        DuenoResumenDTO duenoResumen = new DuenoResumenDTO(dueno.getId(), dueno.getNombre());
+
+        return new MascotaResponseDTO(
+                mascota.getId(),
+                mascota.getNombre(),
+                mascota.getEspecie(),
+                mascota.getRaza(),
+                mascota.getEdad(),
+                duenoResumen
+        );
     }
 }
