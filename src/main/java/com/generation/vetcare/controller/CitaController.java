@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +42,11 @@ public class CitaController {
         return citaService.crearCita(dto)
                 .map(creada -> ResponseEntity.status(HttpStatus.CREATED).body(creada))
                 .orElse(ResponseEntity.badRequest().build());
+    }
+
+    @PatchMapping("/{id}/atender")
+    public CitaResponseDTO atender(@PathVariable Long id) {
+        return citaService.marcarComoAtendida(id);
     }
 
     @DeleteMapping("/{id}")

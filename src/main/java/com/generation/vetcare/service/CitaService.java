@@ -66,6 +66,16 @@ public class CitaService {
         return Optional.of(mapearACitaResponseDTO(creada));
     }
 
+    @Transactional
+    public CitaResponseDTO marcarComoAtendida(Long id) {
+        Cita cita = citaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("No existe una cita con id " + id));
+
+        cita.setEstado(EstadoCita.ATENDIDA);
+        Cita actualizada = citaRepository.save(cita);
+        return mapearACitaResponseDTO(actualizada);
+    }
+
     public void eliminarCita(Long id) {
         if (!citaRepository.existsById(id)) {
             throw new ResourceNotFoundException("No existe una cita con id " + id);
